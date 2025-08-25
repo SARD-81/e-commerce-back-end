@@ -7,55 +7,57 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---------- USER ----------
 model User {
-  id            Int            @id @default(autoincrement())
-  email         String         @unique
-  name          String?
-  password      String
-  role          String         @default("USER")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  cartItems     CartItem[]
-  orders        Order[]
-  reviews       Review[]
-  refreshTokens RefreshToken[]
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  role     String @default("USER")
+
+  // Relations
+  addresses Address[]
+  cart      CartItem[]
+  orders    Order[]
+  reviews   Review[]
+  wishlist  Wishlist[]
 }
 
-model RefreshToken {
-  id        Int      @id @default(autoincrement())
-  token     String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+// ---------- ADDRESS ----------
+model Address {
+  id        Int     @id @default(autoincrement())
+  user      User    @relation(fields: [userId], references: [id])
   userId    Int
-  revoked   Boolean  @default(false)
-  createdAt DateTime @default(now())
-  expiresAt DateTime
+  street    String
+  city      String
+  country   String
+  postal    String
+  isDefault Boolean @default(false)
 }
 
-model Category {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  slug      String    @unique
-  products  Product[]
-  createdAt DateTime  @default(now())
-}
-
+// ---------- PRODUCT ----------
 model Product {
-  id          Int         @id @default(autoincrement())
-  title       String
-  slug        String      @unique
-  description String?
-  price       Float
-  imageUrl    String?
-  stock       Int         @default(0)
-  category    Category?   @relation(fields: [categoryId], references: [id])
-  categoryId  Int?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  reviews     Review[]
-  orderItems  OrderItem[]
-  cartItems   CartItem[]
+  id          Int    @id @default(autoincrement())
+  name        String
+  description String
+  price       Float // use Float instead of Decimal for SQLite
+  stock       Int    @default(0)
+
+  // Relations
+  reviews   Review[]
+  images    ProductImage[]
+  cartItems CartItem[]
+  wishlist  Wishlist[]
 }
 
+// ---------- PRODUCT IMAGE ----------
+model ProductImage {
+  id        Int     @id @default(autoincrement())
+  url       String
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+}
+
+// ---------- REVIEW ----------
 model Review {
   id        Int      @id @default(autoincrement())
   rating    Int
@@ -65,39 +67,32 @@ model Review {
   product   Product  @relation(fields: [productId], references: [id])
   productId Int
   createdAt DateTime @default(now())
-
-  @@unique([userId, productId])
 }
 
+// ---------- CART ----------
 model CartItem {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    Int
-  product   Product  @relation(fields: [productId], references: [id])
-  productId Int
-  quantity  Int      @default(1)
-  createdAt DateTime @default(now())
-
-  @@unique([userId, productId])
-}
-
-model Order {
-  id        Int         @id @default(autoincrement())
-  user      User        @relation(fields: [userId], references: [id])
-  userId    Int
-  status    String      @default("PENDING")
-  total     Float
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  items     OrderItem[]
-}
-
-model OrderItem {
   id        Int     @id @default(autoincrement())
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderId   Int
+  quantity  Int     @default(1)
+  user      User    @relation(fields: [userId], references: [id])
+  userId    Int
   product   Product @relation(fields: [productId], references: [id])
   productId Int
-  quantity  Int
-  price     Float
+}
+
+// ---------- ORDER ----------
+model Order {
+  id        Int      @id @default(autoincrement())
+  total     Float
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime @default(now())
+}
+
+// ---------- WISHLIST ----------
+model Wishlist {
+  id        Int     @id @default(autoincrement())
+  user      User    @relation(fields: [userId], references: [id])
+  userId    Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
 }
