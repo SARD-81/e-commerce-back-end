@@ -9,12 +9,12 @@ datasource db {
 
 // ---------- USER ----------
 model User {
-  id       Int    @id @default(autoincrement())
-  email    String @unique
-  password String
-  role     String @default("USER")
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  role      String    @default("USER")
+  name      String
 
-  // Relations
   addresses Address[]
   cart      CartItem[]
   orders    Order[]
@@ -34,15 +34,25 @@ model Address {
   isDefault Boolean @default(false)
 }
 
+// ---------- CATEGORY ----------
+model Category {
+  id       Int      @id @default(autoincrement())
+  name     String
+  slug     String   @unique
+  products Product[]
+}
+
 // ---------- PRODUCT ----------
 model Product {
   id          Int    @id @default(autoincrement())
   name        String
   description String
-  price       Float // use Float instead of Decimal for SQLite
+  price       Float
   stock       Int    @default(0)
 
-  // Relations
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId Int
+
   reviews   Review[]
   images    ProductImage[]
   cartItems CartItem[]
