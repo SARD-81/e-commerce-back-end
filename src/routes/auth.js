@@ -8,6 +8,7 @@ import {
 } from "../utils/jwt.js";
 import { requireAuth } from "../middleware/auth.js";
 import { z } from "zod";
+
 const router = Router();
 const registerSchema = z.object({
   email: z.string().email(),

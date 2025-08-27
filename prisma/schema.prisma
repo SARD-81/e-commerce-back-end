@@ -20,6 +20,16 @@ model User {
   orders    Order[]
   reviews   Review[]
   wishlist  Wishlist[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
 }
 
 // ---------- ADDRESS ----------
