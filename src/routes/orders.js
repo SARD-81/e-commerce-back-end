@@ -1,10 +1,20 @@
 import { Router } from "express";
 import { prisma } from "../prisma.js";
 import { requireAuth, requireAdmin } from "../middleware/auth.js";
+
 const router = Router();
+
 // Create order from current cart
 router.post("/", requireAuth, async (req, res) => {
   const userId = req.user.id;
+  const addressId = Number(req.body.addressId);
+  if (!addressId) return res.status(400).json({ error: "addressId required" });
+
+  const address = await prisma.userAddress.findFirst({
+    where: { id: addressId, userId },
+  });
+  if (!address) return res.status(404).json({ error: "Address not found" });
+
   const cart = await prisma.cartItem.findMany({
     where: { userId },
     include: {
@@ -12,6 +22,7 @@ router.post("/", requireAuth, async (req, res) => {
     },
   });
   if (!cart.length) return res.status(400).json({ error: "Cart is empty" });
+
   // transaction: check stock, decrement, create order + items, clear cart
   const order = await prisma.$transaction(async (tx) => {
     // verify stock
@@ -36,7 +47,7 @@ router.post("/", requireAuth, async (req, res) => {
       0
     );
     const created = await tx.order.create({
-      data: { userId, status: "PENDING", total },
+      data: { userId, status: "PENDING", total, addressId },
     });
     for (const item of cart) {
       await tx.orderItem.create({
@@ -54,23 +65,30 @@ router.post("/", requireAuth, async (req, res) => {
   });
   res.status(201).json({ orderId: order.id });
 });
+
 // My orders
 router.get("/", requireAuth, async (req, res) => {
   const orders = await prisma.order.findMany({
     where: { userId: req.user.id },
     orderBy: { createdAt: "desc" },
-    include: { items: true },
+    include: { items: true, address: true },
   });
   res.json(orders);
 });
+
 // Admin: list all
 router.get("/admin/all", requireAuth, requireAdmin, async (req, res) => {
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
-    include: { items: true, user: { select: { id: true, email: true } } },
+    include: {
+      items: true,
+      address: true,
+      user: { select: { id: true, email: true } },
+    },
   });
   res.json(orders);
 });
+
 // Admin: update status
 router.patch("/admin/:id", requireAuth, requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
@@ -86,4 +104,5 @@ router.patch("/admin/:id", requireAuth, requireAdmin, async (req, res) => {
   });
   res.json(updated);
 });
+
 export default router;
