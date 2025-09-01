@@ -15,7 +15,7 @@ model User {
   role      String    @default("USER")
   name      String
 
-  addresses Address[]
+  addresses UserAddress[]
   cart      CartItem[]
   orders    Order[]
   reviews   Review[]
@@ -32,16 +32,19 @@ model RefreshToken {
   revoked   Boolean  @default(false)
 }
 
-// ---------- ADDRESS ----------
-model Address {
-  id        Int     @id @default(autoincrement())
-  user      User    @relation(fields: [userId], references: [id])
-  userId    Int
-  street    String
-  city      String
-  country   String
-  postal    String
-  isDefault Boolean @default(false)
+// ---------- USER ADDRESS ----------
+model UserAddress {
+  id             Int     @id @default(autoincrement())
+  user           User    @relation(fields: [userId], references: [id])
+  userId         Int
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  state          String
+  country        String
+  postalCode     String
+
+  orders         Order[]
 }
 
 // ---------- CATEGORY ----------
@@ -67,6 +70,7 @@ model Product {
   images    ProductImage[]
   cartItems CartItem[]
   wishlist  Wishlist[]
+  orderItems OrderItem[]
 }
 
 // ---------- PRODUCT IMAGE ----------
@@ -104,9 +108,25 @@ model CartItem {
 model Order {
   id        Int      @id @default(autoincrement())
   total     Float
-  user      User     @relation(fields: [userId], references: [id])
+  status    String   @default("PENDING")
+  user      User       @relation(fields: [userId], references: [id])
   userId    Int
+  address   UserAddress @relation(fields: [addressId], references: [id])
+  addressId Int
   createdAt DateTime @default(now())
+
+  items     OrderItem[]
+}
+
+// ---------- ORDER ITEM ----------
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int
+  price     Float
 }
 
 // ---------- WISHLIST ----------
