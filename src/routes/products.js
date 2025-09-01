@@ -23,9 +23,20 @@ import { Router } from "express";
  });
  router.get("/:id", async (req, res) => {
  const id = Number(req.params.id);
- const product = await prisma.product.findUnique({ where: { id } });
+ const product = await prisma.product.findUnique({
+ where: { id },
+ include: {
+ reviews: {
+ include: { user: { select: { id: true, name: true } } },
+ orderBy: { createdAt: "desc" }
+ }
+ }
+ });
  if (!product) return res.status(404).json({ error: "Not found" });
- res.json(product);
+ const averageRating = product.reviews.length
+ ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length
+ : null;
+ res.json({ ...product, averageRating });
  });
  const createSchema = z.object({
  title: z.string().min(1),description: z.string().optional(),
